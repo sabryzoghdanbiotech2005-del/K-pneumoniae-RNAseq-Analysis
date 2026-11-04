@@ -8,44 +8,44 @@ BiocManager::install("DESeq2", force = TRUE)
 # Script 01: Load and Explore Data
 # ============================================
 
-# 1. ضبط مسار العمل (تأكد إن المسار ده هو مسار مشروعك بالظبط)
+# 1. Set the workflow path (make sure this path is exactly your project path)
 getwd() 
 setwd("C:/Users/SIRA/OneDrive/Desktop/kpneumoniae-rnaseq-analysis")
 
-# 2. استدعاء المكتبات
+# 2. Importing libraries
 library(DESeq2)
 library(ggplot2)
 
 
-# 3. قراءة ملف الـ Counts
-# (هنتجاهل أول 3 أعمدة Chr و Length عشان هما مش أرقام تعبير)
+# 3. Reading the Counts file
+# (We'll ignore the first 3 columns Chr and Length because they're not numeric expressions)
 counts_raw <- read.delim("data/GSE237490_raw_counts.txt", row.names = 1, check.names = FALSE)
 counts <- counts_raw[, 4:ncol(counts_raw)]
 
-# 4. قراءة ملف الـ Metadata
+# 4. Reading the Metadata File
 coldata <- read.csv("data/metadata.csv", row.names = 1)
 
-# 5. التأكد إن أسماء العينات متطابقة
+# 5. Make sure the sample names match
 print("Do sample names match?")
 print(all(colnames(counts) == rownames(coldata)))
 
-# 6. ترتيب الأعمدة عشان تتطابق مع الميتاداتا
+# 6. Arrange the columns so they match the metadata
 counts <- counts[, rownames(coldata)]
 
-# 7. تجهيز كائن DESeq2
+# 7. Preparing a DESeq2 Object
 dds <- DESeqDataSetFromMatrix(countData = counts,
                               colData = coldata,
                               design = ~ group)
 
-# 8. فلترة الجينات اللي تعبيرها قليل جداً (أقل من 10 في 3 عينات على الأقل)
+# 8. Filtering out genes with very low expression (less than 10 in at least 3 samples)
 keep <- rowSums(counts(dds) >= 10) >= 3
 dds <- dds[keep, ]
 print(paste("Genes remaining after filtering:", nrow(dds)))
 
-# 9. تحويل البيانات باستخدام VST (عشان نعمل PCA)
+# 9. Transforming data using VST (so we can do PCA)
 vsd <- vst(dds, blind = TRUE)
 
-# 10. استخراج بيانات الـ PCA ورسمها
+# 10. Extracting PCA data and plotting it
 pcaData <- plotPCA(vsd, intgroup = "group", returnData = TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 
@@ -56,21 +56,21 @@ p <- ggplot(pcaData, aes(PC1, PC2, color = group)) +
   theme_bw() +
   ggtitle("PCA - K. pneumoniae RNA-seq")
 
-# 11. حفظ الرسمة
+# 11. Save the drawing
 ggsave("results/figures/01_PCA_QC.png", p, width = 8, height = 6, dpi = 300)
 print("PCA plot saved successfully in results/figures/!")
 
 colnames(counts)
 rownames(coldata)
 
-# بنشوف الأعمدة المشتركة بين الملفين
+# Let's look at the columns shared between the two files
 common_samples <- intersect(colnames(counts), rownames(coldata))
 
-# نفلتر الملفين عشان يبقوا في نفس الترتيب بالظبط
+# Let's filter the two files so they end up in exactly the same order
 counts <- counts[, common_samples]
 coldata <- coldata[common_samples, , drop = FALSE]
 
-# نتأكد
+# Let's make sure
 print(all(colnames(counts) == rownames(coldata)))
 
 
@@ -78,27 +78,27 @@ print(all(colnames(counts) == rownames(coldata)))
 # Script 02: Differential Expression Analysis
 # ============================================
 
-# 1. تشغيل التحليل التفاضلي (الموديل الأساسي)
+# 1. Run the differential analysis (basic model)
 dds <- DESeq(dds)
 
-# 2. استخراج النتائج لكل مجموعة مقارنة بالـ WT
-# المقارنة الأولى: CP17 vs WT
+# 2. Extracting the results for each group compared to the WT
+# First comparison: CP17 vs WT
 res_CP17 <- results(dds, contrast = c("group", "CP17", "WT"))
 summary(res_CP17)
 
-# المقارنة الثانية: CP6 vs WT
+# Second Comparison: CP6 vs WT
 res_CP6 <- results(dds, contrast = c("group", "CP6", "WT"))
 summary(res_CP6)
 
-# المقارنة الثالثة: P2 vs WT
+# Third Comparison: P2 vs WT
 res_P2 <- results(dds, contrast = c("group", "P2", "WT"))
 summary(res_P2)
 
-# المقارنة الرابعة: P13 vs WT
+# Comparison Four: P13 vs WT
 res_P13 <- results(dds, contrast = c("group", "P13", "WT"))
 summary(res_P13)
 
-# 3. حفظ النتائج في ملفات عشان نستخدمها في الرسم
+#3. Saving the results in files so we can use them for plotting
 write.csv(as.data.frame(res_CP17), file = "results/tables/DEGs_CP17_vs_WT.csv")
 write.csv(as.data.frame(res_CP6), file = "results/tables/DEGs_CP6_vs_WT.csv")
 write.csv(as.data.frame(res_P2), file = "results/tables/DEGs_P2_vs_WT.csv")
@@ -111,20 +111,20 @@ print("Differential expression analysis complete and saved!")
 # Script 02: Volcano Plot for DEGs
 # ============================================
 
-# 1. استدعاء المكتبات
+# 1. Importing Libraries
 library(ggplot2)
 library(EnhancedVolcano)
 
-# 2. قراءة ملف النتائج لمقارنة CP17 vs WT
-# (تأكد إنك في المسار الصح للمشروع)
+# 2. Reading the results file to compare CP17 vs WT
+# (Make sure you're in the right project path)
 res_CP17 <- read.csv("results/tables/DEGs_CP17_vs_WT.csv", row.names = 1)
 
-# 3. فلترة الجينات المهمة (|log2FC| > 1 و padj < 0.05)
-# (هنتعامل مع قيم padj اللي فيها NA)
+# 3. Filtering important genes (|log2FC| > 1 and padj < 0.05)
+# (We'll deal with padj values that are NA)
 res_CP17_filtered <- res_CP17[!is.na(res_CP17$padj) & res_CP17$padj < 0.05 & abs(res_CP17$log2FoldChange) > 1, ]
 
-# 4. عمل الـ Volcano Plot باستخدام EnhancedVolcano
-# (ده بيعمل رسمة احترافية جداً)
+# 4. Creating the Volcano Plot using EnhancedVolcano
+# (This makes a very professional-looking plot)
 p <- EnhancedVolcano(res_CP17,
                      lab = rownames(res_CP17),
                      x = 'log2FoldChange',
@@ -137,10 +137,10 @@ p <- EnhancedVolcano(res_CP17,
                      col=c('black', 'black', 'black', 'red3'),
                      colAlpha = 1)
 
-# 5. حفظ الرسمة بجودة عالية
+# 5. Save the drawing in high quality
 ggsave("results/figures/volcano_CP17_vs_WT.png", p, width = 10, height = 8, dpi = 300)
 
-# 6. طباعة عدد الجينات المهمة
+# 6. Printing the number of important genes
 cat("Number of significant DEGs (|log2FC| > 1 & padj < 0.05):", nrow(res_CP17_filtered), "\n")
 
 
@@ -148,11 +148,11 @@ cat("Number of significant DEGs (|log2FC| > 1 & padj < 0.05):", nrow(res_CP17_fi
 # Script 03: Heatmap for Top 50 DEGs
 # ============================================
 
-# 1. استدعاء المكتبات
+# 1. Calling the libraries
 library(pheatmap)
 
-# 2. تجهيز بيانات الـ VST (اللي عملناها قبل كده)
-# (لو مش موجودة في الـ Environment، هنعيد حسابها بسرعة)
+# 2. Preparing the VST data (the one we did before)
+# (If it's not available in the Environment, we'll recalculate it quickly)
 if (!exists("vsd")) {
   library(DESeq2)
   dds <- DESeqDataSetFromMatrix(countData = counts, colData = coldata, design = ~ group)
@@ -160,31 +160,30 @@ if (!exists("vsd")) {
   vsd <- vst(dds, blind = TRUE)
 }
 
-# 3. استخراج أعلى 50 جين من نتائج CP17
-# (بنرتب حسب الـ p-value وناخد أول 50)
+# 3. Extract the top 50 genes from the CP17 results
+# (we sort by p-value and take the top 50)
 res_sorted <- res_CP17[order(res_CP17$padj), ]
 top50_genes <- rownames(res_sorted)[1:50]
 
-# 4. استخراج بيانات التعبير لأفضل 50 جين
+# 4. Extracting expression data for the top 50 genes
 mat <- assay(vsd)[top50_genes, ]
 
-# 5. تحجيم البيانات (Z-score) عشان المقارنة تبقى أوضح في الـ Heatmap
+# 5. Scaling data (Z-score) so the comparison is clearer in the Heatmap
 mat_scaled <- t(scale(t(mat)))
 
-# 6. عمل الـ Heatmap
+# 6. Creating the Heatmap
 pheatmap(mat_scaled,
-         cluster_rows = TRUE,      # بنجمع الجينات المتشابهة
-         cluster_cols = TRUE,      # بنجمع العينات المتشابهة
-         show_rownames = TRUE,     # نعرض أسماء الجينات
-         show_colnames = TRUE,     # نعرض أسماء العينات
-         annotation_col = coldata["group"], # نلون العينات حسب المجموعة
-         main = "Top 50 DEGs: CP17 vs WT",
-         color = colorRampPalette(c("navy", "white", "firebrick3"))(50), # تدرج لوني احترافي
+         cluster_rows = TRUE,      # we group similar genes
+         cluster_cols = TRUE,      # we group similar samples
+         show_rownames = TRUE,     # we show gene names
+         show_colnames = TRUE,     # we show sample names
+annotation_col = coldata["group"], # we color samples by group
+main = "Top 50 DEGs: CP17 vs WT"
+         color = colorRampPalette(c("navy", "white", "firebrick3"))(50), # professional color gradient
          fontsize_row = 8,
          fontsize_col = 10,
-         filename = "results/figures/heatmap_CP17_vs_WT.png", # حفظ مباشر
+         filename = "results/figures/heatmap_CP17_vs_WT.png", # direct save
          width = 8, height = 10)
-
 cat("Heatmap saved successfully in results/figures/heatmap_CP17_vs_WT.png\n")
 
 
@@ -192,17 +191,17 @@ cat("Heatmap saved successfully in results/figures/heatmap_CP17_vs_WT.png\n")
 # Script 04: Volcano Plots for other groups
 # ============================================
 
-# قائمة بالملفات اللي عايزين نعمللها تحليل
+# List of files we want to analyze
 groups <- c("CP6", "P2", "P13")
 
 for (grp in groups) {
-  # قراءة الملف
+# Reading the file
   res_file <- paste0("results/tables/DEGs_", grp, "_vs_WT.csv")
   
   if (file.exists(res_file)) {
     res_data <- read.csv(res_file, row.names = 1)
     
-    # عمل الرسمة
+    # Making the drawing
     p_volcano <- EnhancedVolcano(res_data,
                                  lab = rownames(res_data),
                                  x = 'log2FoldChange',
@@ -215,10 +214,10 @@ for (grp in groups) {
                                  col=c('black', 'black', 'black', 'red3'),
                                  colAlpha = 1)
     
-    # حفظ الرسمة
+    # Save the drawing
     ggsave(paste0("results/figures/volcano_", grp, "_vs_WT.png"), p_volcano, width = 10, height = 8, dpi = 300)
     
-    # طباعة عدد الجينات المختلفة
+    # Print the number of different genes
     sig_count <- sum(!is.na(res_data$padj) & res_data$padj < 0.05 & abs(res_data$log2FoldChange) > 1)
     cat("Done for", grp, "- Significant DEGs:", sig_count, "\n")
   }
@@ -230,23 +229,24 @@ for (grp in groups) {
 # Script 05: Extract Top Genes per Group
 # ============================================
 
-# قائمة بالمجموعات
+# List of groups
 groups <- c("CP17", "CP6", "P2", "P13")
 
 for (grp in groups) {
-  # قراءة الملف
+  
+# Reading the file
   res_file <- paste0("results/tables/DEGs_", grp, "_vs_WT.csv")
   
   if (file.exists(res_file)) {
     res_data <- read.csv(res_file, row.names = 1)
     
-    # فلترة الجينات المهمة
+# Filtering important genes
     sig_genes <- res_data[!is.na(res_data$padj) & res_data$padj < 0.05 & abs(res_data$log2FoldChange) > 2, ]
     
-    # ترتيب حسب الـ log2FoldChange (لجذب أقوى التغييرات)
+# Sorting by log2FoldChange (to highlight the strongest changes)
     sig_genes <- sig_genes[order(sig_genes$log2FoldChange, decreasing = TRUE), ]
     
-    # حفظ الجدول
+# Save the table
     output_file <- paste0("results/tables/Top_DEGs_", grp, ".csv")
     write.csv(sig_genes, output_file)
     
@@ -256,7 +256,7 @@ for (grp in groups) {
 
 
 #####################################################################
-# قراءة وعرض الجينات المهمة
+# Reading and Displaying Important Genes
 top_cp17 <- read.csv("results/tables/Top_DEGs_CP17.csv")
 top_cp6  <- read.csv("results/tables/Top_DEGs_CP6.csv")
 top_p2   <- read.csv("results/tables/Top_DEGs_P2.csv")
