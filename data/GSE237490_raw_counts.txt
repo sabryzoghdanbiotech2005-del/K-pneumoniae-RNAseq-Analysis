@@ -5190,3 +5190,8 @@ VK055_5188	NZ_CP009208.1	615	6	10	4	1	6	17	3	5	11	4	1	16	6	3	1
 VK055_5189	NZ_CP009208.1	2154	19	29	17	7	26	57	3	4	28	8	5	39	39	7	4
 VK055_5190	NZ_CP009208.1	579	1	9	6	1	40	51	3	0	30	0	2	57	19	6	3
 VK055_5191	NZ_CP009208.1	126	0	3	1	0	0	4	0	1	3	0	0	0	2	1	2
+
+install.packages(c("ggplot2", "pheatmap"))
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(c("DESeq2", "EnhancedVolcano"))

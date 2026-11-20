@@ -1,0 +1,6 @@
+"strain","max_biomass","lipid_at_50pct_growth","lipid_max_no_growth","lipid_yield_per_glc"
+"WT",3.548,0.143,0.143,0.0143
+"ACC1 OE",3.548,1.391,2.5,0.1391
+"ACC1 OE + PEX10 KO",3.548,1.391,2.5,0.1391
+"+ ZWF1 OE (NADPH)",3.548,1.391,2.5,0.1391
+"+ transhydrogenase",3.548,1.391,2.5,0.1391
