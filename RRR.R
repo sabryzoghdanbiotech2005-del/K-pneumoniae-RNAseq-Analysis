@@ -273,3 +273,10 @@ print(head(top_p2[, c("X", "log2FoldChange", "padj")], 5))
 
 cat("\n=== Top 5 Genes P13 ===\n")
 print(head(top_p13[, c("X", "log2FoldChange", "padj")], 5))
+
+
+install.packages(c("rmarkdown", "knitr", "tinytex"))
+tinytex::install_tinytex()
+install.packages("tinytex")
+tinytex::install_tinytex(force = TRUE)
+tinytex::is_tinytex()
